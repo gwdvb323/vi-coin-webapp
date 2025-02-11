@@ -1,0 +1,101 @@
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+
+export default function VI_Coin() {
+  const [balance, setBalance] = useState(0);
+  const [energy, setEnergy] = useState(100);
+  const [viLetters, setViLetters] = useState([]);
+  const [referralLink, setReferralLink] = useState("");
+  const [showMarket, setShowMarket] = useState(false);
+  const [showReferrals, setShowReferrals] = useState(false);
+  const [referrals, setReferrals] = useState(0);
+  const [energyRegen, setEnergyRegen] = useState(null);
+
+  useEffect(() => {
+    window.Telegram.WebApp.expand();
+    setReferralLink(`https://t.me/yourbot?start=${window.Telegram.WebApp.initDataUnsafe.user?.id}`);
+
+    setEnergyRegen(
+      setInterval(() => {
+        setEnergy((prev) => (prev < 100 ? prev + 1 : 100));
+      }, 5000)
+    );
+    return () => clearInterval(energyRegen);
+  }, []);
+
+  const handleTap = (e) => {
+    if (energy <= 0) return;
+
+    setBalance(balance + 1);
+    setEnergy(energy - 1);
+
+    const newLetter = {
+      id: Date.now(),
+      x: e.clientX,
+      y: e.clientY,
+    };
+    setViLetters([...viLetters, newLetter]);
+    setTimeout(() => {
+      setViLetters((letters) => letters.filter((l) => l.id !== newLetter.id));
+    }, 1000);
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+      {!showMarket && !showReferrals ? (
+        <>
+          <div className="absolute top-5 flex justify-between w-full px-10">
+            <div>Баланс: {balance} VI</div>
+            <div>Энергия: {energy}%</div>
+          </div>
+          <div className="relative mt-10" onClick={handleTap}>
+            <motion.div
+              className="w-40 h-40 bg-yellow-500 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg cursor-pointer"
+              whileTap={{ scale: 0.9 }}
+            >
+              VI
+            </motion.div>
+            {viLetters.map((letter) => (
+              <motion.div
+                key={letter.id}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -50 }}
+                transition={{ duration: 1 }}
+                className="absolute text-yellow-500 font-bold"
+                style={{ left: letter.x, top: letter.y }}
+              >
+                VI
+              </motion.div>
+            ))}
+          </div>
+          <div className="fixed bottom-5 flex space-x-4">
+            <button className="bg-blue-500 p-2 rounded" onClick={() => setShowMarket(true)}>Маркет</button>
+            <button className="bg-green-500 p-2 rounded">Буст Энергии</button>
+            <button className="bg-purple-500 p-2 rounded" onClick={() => navigator.clipboard.writeText(referralLink)}>
+              Копировать Реф. Ссылку
+            </button>
+            <button className="bg-orange-500 p-2 rounded" onClick={() => setShowReferrals(true)}>
+              Рефералы
+            </button>
+          </div>
+        </>
+      ) : showMarket ? (
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
+          <h1 className="text-2xl mb-4">Маркет</h1>
+          <button className="bg-red-500 mb-2 p-2 rounded">Жидкость</button>
+          <button className="bg-blue-500 mb-4 p-2 rounded">Испарители</button>
+          <button className="bg-gray-600 p-2 rounded" onClick={() => setShowMarket(false)}>Назад</button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-800 text-white">
+          <h1 className="text-2xl mb-4">Рефералы</h1>
+          <p className="mb-4">Вы пригласили: {referrals} друзей</p>
+          <button className="bg-purple-500 mb-4 p-2 rounded" onClick={() => navigator.clipboard.writeText(referralLink)}>
+            Копировать Реф. Ссылку
+          </button>
+          <button className="bg-gray-600 p-2 rounded" onClick={() => setShowReferrals(false)}>Назад</button>
+        </div>
+      )}
+    </div>
+  );
+}
